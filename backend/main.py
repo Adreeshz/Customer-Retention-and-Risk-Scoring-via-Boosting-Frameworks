@@ -32,7 +32,7 @@ def get_model() -> ChurnModel:
 
 
 @asynccontextmanager
-def lifespan(_: FastAPI):
+async def lifespan(_: FastAPI):
     get_model()
     yield
 

@@ -161,6 +161,3 @@ export function curvePath(points: Point[], width: number, height: number, pad = 
     })
     .join(" ");
 }
-
-
-+++ src/hooks/useModel.ts (修改后)

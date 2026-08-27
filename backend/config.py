@@ -22,8 +22,8 @@ PROCESSED_XLSX_PATH = DATA_PROCESSED_DIR / "telco_churn_processed.xlsx"
 # file; each candidate is tried in order until one passes validation
 # ==============================================================================
 DATASET_URLS = [
-    "https://raw.githubusercontent.com/dsrscientist/dataset1/master/WA_Fn-UseC_-Telco-Customer-Churn.csv",
-    "https://raw.githubusercontent.com/aniruddhachoudhury/Churn-Models/master/WA_Fn-UseC_-Telco-Customer-Churn.csv",
+    "https://raw.githubusercontent.com/IBM/telco-customer-churn/master/WA_Fn-UseC_-Telco-Customer-Churn.csv",
+    "https://raw.githubusercontent.com/afagarap/machine-learning/master/datasets/WA_Fn-UseC_-Telco-Customer-Churn.csv",
 ]
 EXPECTED_MIN_ROWS = 7000
 EXPECTED_COLUMN = "Churn"

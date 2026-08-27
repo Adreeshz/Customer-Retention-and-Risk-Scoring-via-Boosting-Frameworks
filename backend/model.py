@@ -50,8 +50,8 @@ def _optional_framework(name: str, builder, x_test, y_test, seed: int) -> dict |
     try:
         candidate = builder(seed)
         prob = candidate.predict_proba(x_test)[:, 1]
+        # both arrays share length n_thresholds + 1, so reversing aligns them for auc()
         precision, recall, _ = precision_recall_curve(y_test, prob)
-        precision = precision[:-1]  # drop the recall-0 sentinel so the arrays align
         return {
             "name": name,
             "rocAuc": _r5(roc_auc_score(y_test, prob)),
@@ -100,8 +100,8 @@ class ChurnModel:
         test_prob = engine.predict_proba(x_test)[:, 1]
 
         fpr, tpr, _ = roc_curve(y_test, test_prob)
+        # both arrays share length n_thresholds + 1, so reversing aligns them for auc()
         precision, recall, _ = precision_recall_curve(y_test, test_prob)
-        precision = precision[:-1]  # drop the recall-0 sentinel so the arrays align
 
         importance_raw = engine.feature_importances_
         importance_total = float(importance_raw.sum()) or 1.0
