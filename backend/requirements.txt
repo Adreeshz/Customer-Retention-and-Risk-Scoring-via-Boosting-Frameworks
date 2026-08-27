@@ -1,0 +1,17 @@
+# ==============================================================================
+# SECTION: CORE DEPENDENCIES — required for the pipeline and the REST service
+# ==============================================================================
+fastapi>=0.110
+uvicorn>=0.29
+pandas>=2.0
+numpy>=1.24
+scikit-learn>=1.4
+openpyxl>=3.1
+requests>=2.31
+
+# ==============================================================================
+# SECTION: OPTIONAL BOOSTING FRAMEWORKS — when installed, the backend trains
+# and compares them against the scikit-learn engine in the /api/status response
+# ==============================================================================
+xgboost>=2.0
+lightgbm>=4.3
