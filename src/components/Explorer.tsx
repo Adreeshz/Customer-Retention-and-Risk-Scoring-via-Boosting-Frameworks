@@ -1,4 +1,3 @@
---- src/components/Explorer.tsx (原始)
 import { useEffect, useMemo, useState } from "react";
 import type { TrainedModel } from "../hooks/useModel";
 import { featureVector, type Customer } from "../lib/dataset";

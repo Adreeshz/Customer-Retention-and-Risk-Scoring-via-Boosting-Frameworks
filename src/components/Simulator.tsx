@@ -1,4 +1,3 @@
---- src/components/Simulator.tsx (原始)
 import { useEffect, useMemo, useState } from "react";
 import type { TrainedModel } from "../hooks/useModel";
 import type { Contract, Customer, InternetService, PaymentMethod } from "../lib/dataset";

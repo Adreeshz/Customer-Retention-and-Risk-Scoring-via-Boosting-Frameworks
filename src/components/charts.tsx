@@ -1,4 +1,3 @@
---- src/components/charts.tsx (原始)
 import { useEffect, useState } from "react";
 import { curvePath } from "../hooks/useModel";
 import type { Point } from "../lib/analytics";
