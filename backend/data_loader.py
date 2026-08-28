@@ -61,15 +61,20 @@ def download_real_dataset() -> str | None:
 
 
 # ==============================================================================
-# SECTION: SOURCE RESOLUTION — picks the real dataset, else the .xlsx mirror
+# SECTION: SOURCE RESOLUTION — the real IBM Telco download and the synthetic
+# .xlsx mirror are each read as a raw frame; the mirror is always available so
+# training never depends on the network alone
 # ==============================================================================
-def load_raw_frame() -> tuple[pd.DataFrame, str]:
+def _load_real_raw() -> pd.DataFrame | None:
     real_path = download_real_dataset()
     if real_path:
-        return pd.read_csv(real_path), "IBM Telco Customer Churn (CSV, real dataset)"
+        return pd.read_csv(real_path)
+    return None
 
+
+def _load_synthetic_raw() -> pd.DataFrame:
     workbook = ensure_synthetic_workbook(SYNTHETIC_XLSX_PATH)
-    return pd.read_excel(workbook), "Synthetic Telco mirror (XLSX fallback)"
+    return pd.read_excel(workbook)
 
 
 # ==============================================================================
@@ -104,8 +109,12 @@ def prepare_frame(raw: pd.DataFrame) -> pd.DataFrame:
         frame["Contract"].astype(str).isin(["Month-to-month", "One year", "Two year"]), "Month-to-month"
     )
     frame["PaperlessBilling"] = _flag(frame["PaperlessBilling"])
-    frame["PaymentMethod"] = frame["PaymentMethod"].astype(str).where(
-        frame["PaymentMethod"].astype(str).isin(["Electronic check", "Mailed check", "Bank transfer", "Credit card"]),
+    # the real Telco file labels the auto methods "Bank transfer (automatic)" /
+    # "Credit card (automatic)"; strip the qualifier so they are not silently
+    # collapsed into Electronic check and the payment_echeck feature stays honest
+    payment = frame["PaymentMethod"].astype(str).str.replace(r"\s*\(automatic\)", "", regex=True).str.strip()
+    frame["PaymentMethod"] = payment.where(
+        payment.isin(["Electronic check", "Mailed check", "Bank transfer", "Credit card"]),
         "Electronic check",
     )
 
@@ -165,11 +174,34 @@ def save_processed(frame: pd.DataFrame) -> str:
     return str(PROCESSED_XLSX_PATH)
 
 
+# ==============================================================================
+# SECTION: DATASET ASSEMBLY — the model trains on the real IBM Telco cohort AND
+# the synthetic mirror stacked together. Each source is cleaned to the canonical
+# schema first (so per-source medians impute independently), then concatenated;
+# customerID prefixes never collide (real "7590-VHVEG" vs synthetic "SYN-…"), and
+# a defensive de-dupe keeps the union clean. When the network is unavailable the
+# real half is simply absent and training proceeds on the synthetic mirror alone.
+# ==============================================================================
 def load_dataset() -> tuple[pd.DataFrame, str]:
-    raw, source = load_raw_frame()
-    prepared = prepare_frame(raw)
-    save_processed(prepared)
-    return prepared, source
+    parts: list[pd.DataFrame] = []
+    labels: list[str] = []
+
+    real_raw = _load_real_raw()
+    if real_raw is not None:
+        real = prepare_frame(real_raw)
+        parts.append(real)
+        labels.append(f"IBM Telco real ({len(real):,})")
+
+    synthetic = prepare_frame(_load_synthetic_raw())
+    parts.append(synthetic)
+    labels.append(f"synthetic mirror ({len(synthetic):,})")
+
+    combined = pd.concat(parts, ignore_index=True)
+    combined = combined.drop_duplicates(subset="customerID").reset_index(drop=True)
+
+    source = "Combined: " + " + ".join(labels) if len(parts) > 1 else labels[0]
+    save_processed(combined)
+    return combined, source
 
 
 if __name__ == "__main__":

@@ -1,7 +1,7 @@
 /* ============= */
 /* SECTION: Imports */
 /* ============= */
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 
 /* ============= */
 /* SECTION: Icons */
@@ -163,29 +163,48 @@ export function SectionHead({ title, sub, right }: { title: string; sub: string;
 
 export function CountUp({ value, format }: { value: number; format: (v: number) => string }) {
   const [display, setDisplay] = useState(0);
-  
+  /* track the live display value without adding it to the effect deps, so the  */
+  /* count-up starts from wherever the previous animation left off on retrain    */
+  const displayRef = useRef(0);
+  displayRef.current = display;
+
   useEffect(() => {
-    let start = display;
-    const end = value;
+    const target = value;
+
+    /* requestAnimationFrame is paused whenever the document is not being        */
+    /* composited (a backgrounded tab, an off-screen preview) and reduced-motion */
+    /* users opt out of animation entirely. In both cases animating would strand */
+    /* the tile at its start value, so snap straight to the real number instead. */
+    const reduceMotion =
+      typeof window !== "undefined" && window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+    const hidden = typeof document !== "undefined" && document.visibilityState !== "visible";
+    if (reduceMotion || hidden) {
+      setDisplay(target);
+      return;
+    }
+
+    const start = displayRef.current;
     const duration = 800;
     const startTime = performance.now();
-    
-    let frame: number;
-    const animate = (now: number) => {
-      const elapsed = now - startTime;
-      const progress = Math.min(elapsed / duration, 1);
+
+    let frame = requestAnimationFrame(function animate(now: number) {
+      const progress = Math.min((now - startTime) / duration, 1);
       const ease = progress === 1 ? 1 : 1 - Math.pow(2, -10 * progress);
-      setDisplay(start + (end - start) * ease);
-      
-      if (progress < 1) {
-        frame = requestAnimationFrame(animate);
-      }
+      setDisplay(start + (target - start) * ease);
+      if (progress < 1) frame = requestAnimationFrame(animate);
+    });
+
+    /* safety net: if the tab is backgrounded mid-animation rAF stops firing, so */
+    /* guarantee the tile reconciles to the true value (setTimeout still fires,  */
+    /* only throttled, while hidden — unlike rAF, which halts completely)         */
+    const settle = window.setTimeout(() => setDisplay(target), duration + 150);
+
+    return () => {
+      cancelAnimationFrame(frame);
+      window.clearTimeout(settle);
     };
-    
-    frame = requestAnimationFrame(animate);
-    return () => cancelAnimationFrame(frame);
   }, [value]);
-  
+
   return <span>{format(display)}</span>;
 }
 
