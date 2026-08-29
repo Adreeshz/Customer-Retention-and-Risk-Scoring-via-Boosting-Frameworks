@@ -187,7 +187,12 @@ export function RiskGauge({ probability, size = 240 }: { probability: number; si
     return `M${a.x},${a.y} A${radius},${radius} 0 ${to - from > 180 ? 1 : 0} 1 ${b.x},${b.y}`;
   };
   const clamped = Math.min(1, Math.max(0, probability));
-  const angle = clamped * 180;
+  // the needle line is drawn pointing straight up (12 o'clock) and rotates about
+  // the hub, so its neutral rotate(0) sits at the gauge's midpoint tick. The arc
+  // sweeps 0 at the left (9 o'clock) to 100 at the right (3 o'clock), so the hand
+  // must travel −90°…+90°, not 0°…180° — the latter drove the needle a full
+  // quarter-turn past the 100 mark for any probability above 50%.
+  const angle = clamped * 180 - 90;
 
   return (
     <svg viewBox={`0 0 ${size} ${H}`} style={{ width: size, maxWidth: "100%" }} role="img" aria-label={`Risk gauge at ${Math.round(clamped * 100)} percent`}>
